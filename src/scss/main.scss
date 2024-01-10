@@ -70,3 +70,13 @@ body {
     }
   }
 }
+
+.footer {
+  background-color: var(--black);
+  text-align: center;
+
+  .copyright {
+    color: #ffffff;
+    padding: 0.5rem 0;
+  }
+}
