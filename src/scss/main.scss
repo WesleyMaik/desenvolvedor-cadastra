@@ -21,3 +21,52 @@ body {
 body {
   font-family: "Open Sans", "Helvetica", "Arial", sans-serif;
 }
+
+.max-w {
+  max-width: 1024px;
+  margin: auto;
+}
+
+.header {
+  border-bottom: 2px solid var(--gray);
+
+  .header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem;
+
+    .minicart-icon {
+      position: relative;
+
+      .minicart-button {
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: none;
+        border: none;
+      }
+
+      .minicart-quantity {
+        $size: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: $size;
+        height: $size;
+        color: #ffffff;
+        background-color: var(--primary);
+        border-radius: $size;
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        font-size: 10px;
+
+        &:empty::after {
+          content: "0";
+        }
+      }
+    }
+  }
+}
