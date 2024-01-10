@@ -1,1 +1,23 @@
 @import "reset";
+@import "fonts.scss";
+
+:root {
+  --primary: #00c0ee;
+  --dark-gray: #666666;
+  --gray: #808080;
+  --black: #000000;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100vh;
+  margin: 0;
+}
+
+body {
+  font-family: "Open Sans", "Helvetica", "Arial", sans-serif;
+}
