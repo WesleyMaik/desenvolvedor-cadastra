@@ -24,13 +24,15 @@ async function getProducts() {
   return { data, error };
 }
 
+type ProductParams = keyof Product;
+
 /**
  *
  * @param products Products list
- * @param key Propriety of Product
- * @returns A distict list of a product's propriety
+ * @param key Property of Product
+ * @returns A distict list of a product's property
  */
-function getArrayDistinct(products: Product[], key: keyof Product) {
+function getArrayDistinct(products: Product[], key: ProductParams) {
   return [...new Set(products?.map((product) => product[key]))];
 }
 
@@ -86,6 +88,76 @@ function getDateByProducts(products: Product[]) {
   return dates.sort() as string[];
 }
 
+type SortBy = "date" | "price" | "color" | "name";
+type OrderBy = "asc" | "desc";
+
+/**
+ *
+ * @param products Products list
+ * @param sortBy Property to sort
+ * @param orderBy Ascending or Descending
+ * @returns Sorted products
+ */
+function sortProductsBy(products: Product[], sortBy: SortBy, orderBy: OrderBy) {
+  const sorted = Array.from(products).sort((a, b) => {
+    const key = sortBy;
+
+    if (a[key] < b[key]) {
+      return orderBy == "asc" ? -1 : 1;
+    }
+
+    if (a[key] > b[key]) {
+      return orderBy == "asc" ? 1 : -1;
+    }
+
+    return 0;
+  });
+
+  return sorted;
+}
+
+type FilterBy = {
+  color?: string;
+  size?: string;
+  price_range?: [number, number];
+};
+
+/**
+ *
+ * @param products  Products list
+ * @param filterBy Property to filter
+ * @returns Filtered products
+ */
+function filterProductsBy(products: Product[], filterBy: FilterBy) {
+  let filtered = Array.from(products);
+
+  if (filterBy.color) {
+    filtered = filtered.filter((product) => {
+      const colorStatement = filterBy.color == product.color;
+      return colorStatement;
+    });
+  }
+
+  if (filterBy.size) {
+    filtered = filtered.filter((product) => {
+      const sizeStatement = product.size.includes(filterBy?.size);
+      return sizeStatement;
+    });
+  }
+
+  if (filterBy.price_range) {
+    filtered = filtered.filter((product) => {
+      const priceStatement =
+        product.price >= filterBy?.price_range[0] &&
+        product.price <= filterBy?.price_range[1];
+
+      return priceStatement;
+    });
+  }
+
+  return filtered;
+}
+
 async function main() {
   const { data: products } = await getProducts();
   const colors = getColorsByProducts(products);
@@ -93,7 +165,14 @@ async function main() {
   const prices = getPricesByProducts(products);
   const dates = getDateByProducts(products);
 
-  console.log({ colors, sizes, prices, dates });
+  console.log({ products, colors, sizes, prices, dates });
+
+  console.log(sortProductsBy(products, "date", "asc"));
+  console.log(sortProductsBy(products, "date", "desc"));
+
+  console.log(filterProductsBy(products, { color: "Amarelo" }));
+  console.log(filterProductsBy(products, { size: "M" }));
+  console.log(filterProductsBy(products, { price_range: [28, 120] }));
 }
 
 document.addEventListener("DOMContentLoaded", main);
