@@ -22,6 +22,17 @@ body {
 
 body {
   font-family: "Open Sans", "Helvetica", "Arial", sans-serif;
+  color: var(--black);
+  background-color: var(--white);
+
+  &[data-theme="dark"] {
+    --primary: #00c0ee;
+    --dark-gray: #cfcfcf;
+    --mid-gray: #d6d6d6;
+    --gray: #c7c7c7;
+    --black: #ffffff;
+    --white: #1a1a1a;
+  }
 }
 
 .max-w {
@@ -48,6 +59,10 @@ body {
         justify-content: center;
         background: none;
         border: none;
+
+        svg path {
+          fill: var(--black);
+        }
       }
 
       .minicart-quantity {
@@ -98,6 +113,7 @@ body {
     }
 
     .orderby__select {
+      color: var(--black);
       background-color: var(--white);
       padding: 0.5rem;
       border: 1px solid var(--gray);
@@ -169,6 +185,7 @@ body {
           cursor: pointer;
           width: 32px;
           height: 32px;
+          color: var(--black);
           background-color: var(--white);
           border: 1px solid var(--gray);
 
