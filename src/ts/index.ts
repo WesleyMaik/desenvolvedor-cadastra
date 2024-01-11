@@ -78,8 +78,10 @@ function getSizesByProducts(products: Product[]) {
  * @returns A list of prices
  */
 function getPricesByProducts(products: Product[]) {
-  const prices = getArrayDistinct(products, "price") || [];
-  return prices.sort() as number[];
+  const prices = (getArrayDistinct(products, "price") as number[]) || [];
+  return prices.sort((a, b) => {
+    return a - b;
+  });
 }
 
 /**
@@ -162,21 +164,116 @@ function filterProductsBy(products: Product[], filterBy: FilterBy) {
   return filtered;
 }
 
+/**
+ *
+ * @param colors Array of colors
+ * @param target A selector of DOM's element
+ */
+function createColorFilter(colors: string[], target: string) {
+  const container = document.querySelector(target);
+
+  colors.forEach((color) => {
+    const element = `
+    <div id="color-${color}" class="color">
+      <label id="color_label-${color}" class="color_label">
+        <input type="checkbox" name="color[]" id="color-${color}" value="${color}" />
+        <span id="color_name-${color}" class="color_name">${color}</span>
+      </label>
+    </div>
+    `.trim();
+
+    container.innerHTML += element;
+  });
+}
+
+/**
+ *
+ * @param sizes Array of sizes
+ * @param target A selector of DOM's element
+ */
+function createSizeFilter(sizes: string[], target: string) {
+  const container = document.querySelector(target);
+
+  sizes.forEach((size) => {
+    const element = `
+      <button type="button" title="${size}" id="size-${size}" class="size" data-active="false" data-value="${size}">${size}</button>
+    `.trim();
+
+    container.innerHTML += element;
+  });
+}
+
+/**
+ *
+ * @param prices Array of prices
+ * @param target A selector of DOM's element
+ * @returns
+ */
+function createPriceRangeFilter(prices: number[], target: string) {
+  const container = document.querySelector(target);
+
+  if (prices.length < 2) {
+    return;
+  }
+
+  const minPrice = Math.min(...prices);
+  const maxPrice = Math.max(...prices);
+
+  const priceRange = [0, minPrice, maxPrice / 2, maxPrice, Infinity];
+
+  priceRange.forEach((price, index) => {
+    if (index == priceRange.length - 1) {
+      return;
+    }
+
+    const nextValue = priceRange[index + 1];
+
+    let priceText = `<span id="price_range-${index}" class="price_range">
+      de ${formatCurrency(price)} até ${formatCurrency(nextValue)}
+    </span>`;
+
+    if (index == priceRange.length - 2) {
+      priceText = `A partir de ${formatCurrency(maxPrice)}`;
+    }
+
+    const element = `
+      <div id="price-${index}" class="price">
+        <label id="price_label-${index}" class="price_label">
+          <input 
+            type="radio" 
+            name="price-range" 
+            id="price-range-${index}" 
+            value="${price}"
+            data-min-value="${price}"
+            data-max-value="${nextValue}"
+          />
+          ${priceText}
+        </label>
+      </div>
+    `.trim();
+
+    container.innerHTML += element;
+  });
+}
+
+/**
+ *
+ * @param value A number value
+ * @returns A number formatted for Brazilian currency
+ */
+function formatCurrency(value: number) {
+  return value?.toLocaleString("pt-br", { style: "currency", currency: "BRL" });
+}
+
 async function main() {
   const { data: products } = await getProducts();
   const colors = getColorsByProducts(products);
   const sizes = getSizesByProducts(products);
   const prices = getPricesByProducts(products);
-  const dates = getDateByProducts(products);
 
-  console.log({ products, colors, sizes, prices, dates });
-
-  console.log(sortProductsBy(products, "date", "asc"));
-  console.log(sortProductsBy(products, "date", "desc"));
-
-  console.log(filterProductsBy(products, { color: "Amarelo" }));
-  console.log(filterProductsBy(products, { size: "M" }));
-  console.log(filterProductsBy(products, { price_range: [28, 120] }));
+  createColorFilter(colors, "#color-options");
+  createSizeFilter(sizes, "#size-options");
+  createPriceRangeFilter(prices, "#price-options");
 }
 
 document.addEventListener("DOMContentLoaded", main);

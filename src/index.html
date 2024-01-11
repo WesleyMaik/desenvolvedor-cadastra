@@ -44,6 +44,42 @@
         </div>
       </div>
     </header>
+    <main class="search max-w">
+      <section id="search-title" class="search-title">
+        <h2 id="search-title__text" class="search-title__text">Blusas</h2>
+        <div id="orderby" class="orderby">
+          <select
+            title="Ordernar por:"
+            name="orderby__select"
+            id="orderby__select"
+            class="orderby__select"
+          >
+            <option disabled selected>Ordernar por:</option>
+            <option value="newest">Mais recentes</option>
+            <option value="price-asc">Menor preço</option>
+            <option value="price-desc">Maior preço</option>
+          </select>
+        </div>
+      </section>
+
+      <section id="search-content" class="search-content">
+        <aside id="filters" class="filters">
+          <div id="colors" class="colors">
+            <h3 id="color-title" class="color-title title">Cores</h3>
+            <div id="color-options" class="color-options"></div>
+          </div>
+          <div id="sizes" class="sizes">
+            <h3 id="size-title" class="size-title title">Tamanho</h3>
+            <div id="size-options" class="size-options"></div>
+          </div>
+          <div id="prices" class="prices">
+            <h3 id="price-title" class="price-title title">Faixa de Preço</h3>
+            <div id="price-options" class="price-options"></div>
+          </div>
+        </aside>
+        <div id="products" class="products"></div>
+      </section>
+    </main>
     <footer class="footer">
       <p class="copyright">M3: Implantação de E-commerce VTEX</p>
     </footer>
