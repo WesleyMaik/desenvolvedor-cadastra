@@ -16,7 +16,11 @@ async function getProducts() {
 
     const result = (await response.json()) as Product[];
 
-    data = result;
+    const uniqueProducts = result.reduce((acc, cur) => {
+      return acc.some((obj) => obj.id === cur.id) ? acc : [...acc, cur];
+    }, []) as Product[];
+
+    data = uniqueProducts;
   } catch (err) {
     error = err;
   }
