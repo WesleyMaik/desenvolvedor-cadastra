@@ -265,6 +265,50 @@ function formatCurrency(value: number) {
   return value?.toLocaleString("pt-br", { style: "currency", currency: "BRL" });
 }
 
+/**
+ *
+ * @param products Products list
+ */
+function createProductShelfs(products: Product[]) {
+  const container = document.querySelector("#products");
+  container.innerHTML += "";
+
+  products.forEach((product) => {
+    const { id, installment, image, name, price } = product;
+
+    const element = `
+      <a href="#" id="product-${id}" class="product">
+        <div id="image-container-${id}" class="image-container">
+          <img
+            class="product_image"
+            src=".${image}"
+            alt="${name || "Blusa"}"
+            width="190"
+            height="290"
+          />
+        </div>
+        <p id="product-name-${id}" class="product-name">${name}</p>
+        <p id="product-price-${id}" class="product-price">
+          ${formatCurrency(price)}
+        </p>
+        <p id="product-installment-${id}" class="product-installment">
+          Até ${installment[0]}x de ${formatCurrency(price / installment[0])}
+        </p>
+        <button 
+          type="button" 
+          id="add-to-cart-${id}" 
+          class="add-to-cart"
+          data-item-id="${id}"
+        >
+          Comprar
+        </button>
+      </a>
+    `.trim();
+
+    container.innerHTML += element;
+  });
+}
+
 async function main() {
   const { data: products } = await getProducts();
   const colors = getColorsByProducts(products);
@@ -274,6 +318,8 @@ async function main() {
   createColorFilter(colors, "#color-options");
   createSizeFilter(sizes, "#size-options");
   createPriceRangeFilter(prices, "#price-options");
+
+  createProductShelfs(products);
 }
 
 document.addEventListener("DOMContentLoaded", main);
