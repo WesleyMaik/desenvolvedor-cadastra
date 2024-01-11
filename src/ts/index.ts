@@ -271,7 +271,7 @@ function formatCurrency(value: number) {
  */
 function createProductShelfs(products: Product[]) {
   const container = document.querySelector("#products");
-  container.innerHTML += "";
+  container.innerHTML = "";
 
   products.forEach((product) => {
     const { id, installment, image, name, price } = product;
@@ -309,8 +309,27 @@ function createProductShelfs(products: Product[]) {
   });
 }
 
+/**
+ * Object observable to make changes in screen
+ */
+const observable = {
+  value: 10,
+  listener: function () {},
+  set products(products: Product[]) {
+    this.value = products;
+    this.listener(products);
+  },
+  get products() {
+    return this.value;
+  },
+  registerListener: function (listener: (products: Product[]) => void) {
+    this.listener = listener;
+  },
+};
+
 async function main() {
   const { data: products } = await getProducts();
+
   const colors = getColorsByProducts(products);
   const sizes = getSizesByProducts(products);
   const prices = getPricesByProducts(products);
@@ -320,6 +339,42 @@ async function main() {
   createPriceRangeFilter(prices, "#price-options");
 
   createProductShelfs(products);
+
+  observable.registerListener(function (products: Product[]) {
+    createProductShelfs(products);
+  });
+
+  /**
+   * OrderBy component
+   */
+  document
+    .querySelector("#orderby__select")
+    .addEventListener("change", function (evt) {
+      const value = (evt.target as HTMLSelectElement)?.value;
+      let sortBy: SortBy = undefined;
+      let orderBy: OrderBy = undefined;
+
+      switch (value) {
+        case "newest":
+          sortBy = "date";
+          orderBy = "desc";
+          break;
+        case "price-asc":
+          sortBy = "price";
+          orderBy = "asc";
+          break;
+        case "price-desc":
+          sortBy = "price";
+          orderBy = "desc";
+          break;
+      }
+
+      if (!value || !sortBy || !orderBy) {
+        return;
+      }
+
+      observable.products = sortProductsBy(products, sortBy, orderBy);
+    });
 }
 
 document.addEventListener("DOMContentLoaded", main);
