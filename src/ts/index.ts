@@ -4,7 +4,7 @@ const serverUrl = "http://localhost:5000";
 const get_product_url = `${serverUrl}/products`;
 
 async function getProducts() {
-  let data: Product[] | null = null;
+  let data: Product[] = [];
   let error: string | null = null;
 
   try {
@@ -309,6 +309,14 @@ function createProductShelfs(products: Product[]) {
   });
 }
 
+function showErrorMessage() {
+  const container = document.querySelector("#products-container");
+
+  const element = `<p id="error" class="error">Não foi possível exibir os produtos.</p>`;
+
+  container.innerHTML = element;
+}
+
 /**
  * Object observable to make changes in screen
  */
@@ -328,7 +336,12 @@ const observable = {
 };
 
 async function main() {
-  const { data: products } = await getProducts();
+  const { data: products, error } = await getProducts();
+
+  if (error) {
+    showErrorMessage();
+    return;
+  }
 
   const colors = getColorsByProducts(products);
   const sizes = getSizesByProducts(products);
