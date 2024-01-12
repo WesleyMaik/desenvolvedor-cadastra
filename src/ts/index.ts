@@ -286,8 +286,11 @@ function createProductShelfs(products: Product[]) {
   container.innerHTML = "";
 
   if (!products.length) {
-    const emptyElement = `<p></p>`;
+    const container = document.querySelector("#products-container");
 
+    const emptyElement = `<p>Não há produtos no momento.</p>`;
+
+    container.innerHTML = emptyElement;
     return;
   }
 
