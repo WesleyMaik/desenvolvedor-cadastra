@@ -125,7 +125,7 @@ function sortProductsBy(products: Product[], sortBy: SortBy, orderBy: OrderBy) {
 type FilterBy = {
   color?: string[];
   size?: string[];
-  price_range?: [number, number];
+  price_range?: [number?, number?];
 };
 
 /**
@@ -186,6 +186,17 @@ function createColorFilter(colors: string[], target: string) {
 
     container.innerHTML += element;
   });
+
+  const clearFilterElement = `
+    <button 
+      type="button" 
+      title="Limpar filtro" 
+      class="clear-button clear-color" 
+      data-id="clear-color"
+    >Limpar filtro</button>
+  `;
+
+  container.innerHTML += clearFilterElement;
 }
 
 /**
@@ -211,6 +222,17 @@ function createSizeFilter(sizes: string[], target: string) {
 
     container.innerHTML += element;
   });
+
+  const clearFilterElement = `
+    <button 
+      type="button" 
+      title="Limpar filtro" 
+      class="clear-button clear-size" 
+      data-id="clear-size"
+    >Limpar filtro</button>
+  `;
+
+  container.innerHTML += clearFilterElement;
 }
 
 /**
@@ -266,6 +288,17 @@ function createPriceRangeFilter(prices: number[], target: string) {
 
     container.innerHTML += element;
   });
+
+  const clearFilterElement = `
+    <button 
+      type="button" 
+      title="Limpar filtro" 
+      class="clear-button clear-price-range" 
+      data-id="clear-price-range"
+    >Limpar filtro</button>
+  `;
+
+  container.innerHTML += clearFilterElement;
 }
 
 /**
@@ -288,11 +321,13 @@ function createProductShelfs(products: Product[]) {
   if (!products.length) {
     const container = document.querySelector("#products-container");
 
-    const emptyElement = `<p>Não há produtos no momento.</p>`;
+    const emptyElement = `<p id="shelf-empty">Não há produtos no momento.</p>`;
 
-    container.innerHTML = emptyElement;
+    container.innerHTML += emptyElement;
     return;
   }
+
+  document.querySelector("#shelf-empty")?.remove();
 
   products.forEach((product) => {
     const { id, installment, image, name, price } = product;
@@ -380,21 +415,26 @@ class ProductPage {
 }
 
 async function main() {
+  // Fetch products
   const { data: products, error } = await getProducts();
 
+  // Show error message
   if (error) {
     showErrorMessage();
     return;
   }
 
+  // Get product's properties
   const colors = getColorsByProducts(products);
   const sizes = getSizesByProducts(products);
   const prices = getPricesByProducts(products);
 
+  // Create filters
   createColorFilter(colors, "#color-options");
   createSizeFilter(sizes, "#size-options");
   createPriceRangeFilter(prices, "#price-options");
 
+  // Initializing Shelfs
   const productPage = new ProductPage();
   productPage.setProducts(products);
 
@@ -432,6 +472,18 @@ async function main() {
     productPage.setSorted(sortedProducts);
   });
 
+  const clearColorButton = document.querySelector<HTMLButtonElement>(
+    "button[data-id='clear-color']"
+  );
+
+  const clearSizeButton = document.querySelector<HTMLButtonElement>(
+    "button[data-id='clear-size']"
+  );
+
+  const clearPricesButton = document.querySelector<HTMLButtonElement>(
+    "button[data-id='clear-price-range']"
+  );
+
   // FilterBy color
   const colorInputs = document.querySelectorAll<HTMLInputElement>(
     "input[data-id='color']"
@@ -443,6 +495,8 @@ async function main() {
       const choosedColors = [...colorInputs]
         .filter((element) => element.checked)
         .map((element) => element.value);
+
+      clearColorButton.style.display = choosedColors.length ? "block" : "none";
 
       productPage.setFilters({ color: choosedColors });
     });
@@ -467,6 +521,8 @@ async function main() {
         .filter((element) => element.dataset.active == "true")
         .map((element) => element.dataset.value);
 
+      clearSizeButton.style.display = choosedSizes.length ? "block" : "none";
+
       productPage.setFilters({ size: choosedSizes });
     });
   });
@@ -482,7 +538,34 @@ async function main() {
       const minValue = Number(radio.dataset.minValue) || 0;
       const maxValue = Number(radio.dataset.maxValue) || Infinity;
 
-      productPage.setFilters({ price_range: [minValue, maxValue] });
+      clearPricesButton.style.display = radio.checked ? "block" : "none";
+
+      productPage.setFilters({
+        price_range: radio.checked ? [minValue, maxValue] : [],
+      });
+    });
+  });
+
+  // Clear filters events
+
+  clearColorButton.addEventListener("click", function () {
+    colorInputs.forEach((color) => {
+      color.checked = false;
+      color.dispatchEvent(new Event("change"));
+    });
+  });
+
+  clearSizeButton.addEventListener("click", function () {
+    sizeButtons.forEach((button) => {
+      button.dataset.active = "false";
+      button.dispatchEvent(new Event("change"));
+    });
+  });
+
+  clearPricesButton.addEventListener("click", function () {
+    priceRadios.forEach((radio) => {
+      radio.checked = false;
+      radio.dispatchEvent(new Event("change"));
     });
   });
 }
