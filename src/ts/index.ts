@@ -1,3 +1,4 @@
+import { MinicartItem } from "./types/Minicart";
 import { Product } from "./types/Product";
 
 const serverUrl = "http://localhost:5000";
@@ -249,9 +250,10 @@ function createPriceRangeFilter(prices: number[], target: string) {
   }
 
   const minPrice = Math.min(...prices);
+  const midPrice = prices[Math.floor(prices.length / 2)];
   const maxPrice = Math.max(...prices);
 
-  const priceRange = [0, minPrice, maxPrice / 2, maxPrice, Infinity];
+  const priceRange = [0, minPrice, midPrice, maxPrice, Infinity];
 
   priceRange.forEach((price, index) => {
     if (index == priceRange.length - 1) {
@@ -354,6 +356,7 @@ function createProductShelfs(products: Product[]) {
           type="button" 
           id="add-to-cart-${id}" 
           class="add-to-cart"
+          data-id="add-to-cart"
           data-item-id="${id}"
         >
           Comprar
@@ -373,6 +376,66 @@ function showErrorMessage() {
   container.innerHTML = element;
 }
 
+/**
+ *
+ * @param quantity number
+ */
+function updateQuantityCart(quantity: number) {
+  const minicartQuantity =
+    document.querySelector<HTMLDivElement>("#minicart-quantity");
+  minicartQuantity.innerText = String(quantity);
+}
+
+function createProductSummary(items: MinicartItem[]) {
+  const container = document.querySelector("#minicart-items");
+  container.innerHTML = "";
+
+  items.forEach((item) => {
+    const { id, image, name, price } = item;
+
+    const element = `
+      <div id="item" class="item">
+        <img
+          src=".${image}"
+          alt="${name}"
+          id="item-image-${id}"
+          class="item-image"
+        />
+        <div id="item-info-${id}" class="item-info">
+          <p class="item-name">${name}</p>
+          <p class="item-price">${formatCurrency(price)}</p>
+          <button 
+            type="button" 
+            id="remove-item-${id}" 
+            class="remove-item"
+            data-id="remove-item"
+            data-item-id="${id}"
+          >
+            Remover
+          </button>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML += element;
+  });
+}
+
+function updateSubtotal(items: MinicartItem[]) {
+  const subtotal = items.reduce((acc, cur) => {
+    return acc + cur.price * cur.quantity;
+  }, 0);
+
+  const minicartSubtotal = document.querySelector<HTMLSpanElement>(
+    "#minicart-subtotal-value"
+  );
+
+  minicartSubtotal.innerText = formatCurrency(subtotal);
+}
+
+/**
+ * Product constructor
+ */
 class ProductPage {
   constructor(
     private products: Product[] = [],
@@ -414,6 +477,72 @@ class ProductPage {
   }
 }
 
+/**
+ * Minicart constructor
+ */
+class Minicart {
+  constructor(private items: MinicartItem[] = []) {}
+
+  private setItems(items: MinicartItem[]) {
+    this.items = items;
+
+    this.updateMinicart();
+  }
+
+  private updateItem(index: number, property: Partial<MinicartItem>) {
+    const item = this.items[index];
+
+    if (!item) {
+      return;
+    }
+
+    this.items[index] = { ...item, ...property };
+  }
+
+  getItems() {
+    return this.items;
+  }
+
+  addToCart(item: MinicartItem) {
+    const id = item.id;
+    const items = this.getItems();
+
+    const index = this.items.findIndex((item) => item.id == id);
+
+    if (index != -1) {
+      const item = items[index];
+      items[index] = {
+        ...item,
+        quantity: item.quantity + 1,
+      };
+
+      this.updateItem(index, { quantity: item.quantity + 1 });
+      return;
+    }
+
+    this.setItems([...items, item]);
+  }
+
+  removeFromCart(id: string) {
+    const items = this.getItems();
+    const itemIndex = items.findIndex((item) => item.id == id);
+
+    if (itemIndex == -1) {
+      return;
+    }
+
+    this.setItems(items.filter((_, index) => index != itemIndex));
+  }
+
+  updateMinicart() {
+    const items = this.getItems();
+    const quantity = items.length;
+    updateQuantityCart(quantity);
+    createProductSummary(items);
+    updateSubtotal(items);
+  }
+}
+
 async function main() {
   // Fetch products
   const { data: products, error } = await getProducts();
@@ -434,8 +563,10 @@ async function main() {
   createSizeFilter(sizes, "#size-options");
   createPriceRangeFilter(prices, "#price-options");
 
-  // Initializing Shelfs
   const productPage = new ProductPage();
+  const cart = new Minicart();
+
+  // Initializing Shelfs
   productPage.setProducts(products);
 
   // OrderBy element
@@ -566,6 +697,63 @@ async function main() {
     priceRadios.forEach((radio) => {
       radio.checked = false;
       radio.dispatchEvent(new Event("change"));
+    });
+  });
+
+  // Minicart behaviours
+  const minicart = document.querySelector("#minicart");
+  const minicartButton = document.querySelector<HTMLButtonElement>(
+    "button#minicart-button"
+  );
+  const closeMinicartButton = document.querySelector<HTMLButtonElement>(
+    "button#close-minicart"
+  );
+
+  minicartButton.addEventListener("click", function () {
+    minicart.setAttribute("data-open", "true");
+  });
+
+  closeMinicartButton.addEventListener("click", function () {
+    minicart.removeAttribute("data-open");
+  });
+
+  // Add to Minicart event
+
+  const addToCartButtons = document.querySelectorAll<HTMLButtonElement>(
+    "button[data-id='add-to-cart']"
+  );
+
+  addToCartButtons.forEach((addToCartButton) => {
+    addToCartButton.addEventListener("click", function (event) {
+      event.preventDefault();
+
+      const itemId = addToCartButton.dataset.itemId;
+      const items = productPage.getProducts();
+      const item = items.find((item) => item.id == itemId);
+
+      if (!item) {
+        return;
+      }
+
+      cart.addToCart({ ...item, quantity: 1 });
+      minicart.dispatchEvent(new Event("addToCart"));
+      minicartButton.dispatchEvent(new Event("click"));
+    });
+  });
+
+  minicart.addEventListener("addToCart", function () {
+    const removeFromCartButtons = document.querySelectorAll<HTMLButtonElement>(
+      "button[data-id='remove-item']"
+    );
+
+    // Remove from cart event
+    removeFromCartButtons.forEach((button) => {
+      // button.removeEventListener("click", function () {});
+      button.addEventListener("click", function () {
+        const itemId = button.dataset.itemId;
+
+        cart.removeFromCart(itemId);
+      });
     });
   });
 }
