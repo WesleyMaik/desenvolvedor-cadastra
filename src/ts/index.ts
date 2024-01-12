@@ -123,8 +123,8 @@ function sortProductsBy(products: Product[], sortBy: SortBy, orderBy: OrderBy) {
 }
 
 type FilterBy = {
-  color?: string;
-  size?: string;
+  color?: string[];
+  size?: string[];
   price_range?: [number, number];
 };
 
@@ -137,21 +137,23 @@ type FilterBy = {
 function filterProductsBy(products: Product[], filterBy: FilterBy) {
   let filtered = Array.from(products);
 
-  if (filterBy.color) {
+  if (filterBy.color && filterBy.color.length) {
     filtered = filtered.filter((product) => {
-      const colorStatement = filterBy.color == product.color;
+      const colorStatement = filterBy.color.includes(product.color);
       return colorStatement;
     });
   }
 
-  if (filterBy.size) {
+  if (filterBy.size && filterBy.size.length) {
     filtered = filtered.filter((product) => {
-      const sizeStatement = product.size.includes(filterBy?.size);
+      const sizeStatement = filterBy?.size.some((size) =>
+        product.size.includes(size)
+      );
       return sizeStatement;
     });
   }
 
-  if (filterBy.price_range) {
+  if (filterBy.price_range && filterBy.price_range.length) {
     filtered = filtered.filter((product) => {
       const priceStatement =
         product.price >= filterBy?.price_range[0] &&
@@ -176,7 +178,7 @@ function createColorFilter(colors: string[], target: string) {
     const element = `
     <div id="color-${color}" class="color">
       <label id="color_label-${color}" class="color_label">
-        <input type="checkbox" name="color[]" id="color-${color}" value="${color}" />
+        <input type="checkbox" name="color[]" id="color-${color}" data-id="color" value="${color}" />
         <span id="color_name-${color}" class="color_name">${color}</span>
       </label>
     </div>
@@ -196,7 +198,15 @@ function createSizeFilter(sizes: string[], target: string) {
 
   sizes.forEach((size) => {
     const element = `
-      <button type="button" title="${size}" id="size-${size}" class="size" data-active="false" data-value="${size}">${size}</button>
+      <button 
+        type="button" 
+        title="${size}" 
+        id="size-${size}" 
+        class="size" 
+        data-id="size"
+        data-active="false" 
+        data-value="${size}"
+      >${size}</button>
     `.trim();
 
     container.innerHTML += element;
@@ -241,7 +251,9 @@ function createPriceRangeFilter(prices: number[], target: string) {
         <label id="price_label-${index}" class="price_label">
           <input 
             type="radio" 
-            name="price-range" 
+            name="price-range"
+            class="price-range"
+            data-id="prince-range"
             id="price-range-${index}" 
             value="${price}"
             data-min-value="${price}"
@@ -272,6 +284,12 @@ function formatCurrency(value: number) {
 function createProductShelfs(products: Product[]) {
   const container = document.querySelector("#products");
   container.innerHTML = "";
+
+  if (!products.length) {
+    const emptyElement = `<p></p>`;
+
+    return;
+  }
 
   products.forEach((product) => {
     const { id, installment, image, name, price } = product;
@@ -317,23 +335,46 @@ function showErrorMessage() {
   container.innerHTML = element;
 }
 
-/**
- * Object observable to make changes in screen
- */
-const observable = {
-  value: 10,
-  listener: function () {},
-  set products(products: Product[]) {
-    this.value = products;
-    this.listener(products);
-  },
-  get products() {
-    return this.value;
-  },
-  registerListener: function (listener: (products: Product[]) => void) {
-    this.listener = listener;
-  },
-};
+class ProductPage {
+  constructor(
+    private products: Product[] = [],
+    private filters: FilterBy = {},
+    private sorted: Product[] = []
+  ) {}
+
+  setProducts(data: Product[]) {
+    this.products = data;
+
+    if (!this.sorted.length) {
+      this.setSorted(data);
+    }
+
+    createProductShelfs(this.products);
+  }
+
+  getProducts() {
+    return this.products;
+  }
+
+  setSorted(data: Product[]) {
+    this.sorted = data;
+    this.setProducts(data);
+  }
+
+  getSorted() {
+    this.sorted;
+  }
+
+  setFilters(data: FilterBy) {
+    this.filters = { ...this.filters, ...data };
+    const filtered = filterProductsBy(this.sorted, this.filters);
+    this.setProducts(filtered);
+  }
+
+  getFilters() {
+    return this.filters;
+  }
+}
 
 async function main() {
   const { data: products, error } = await getProducts();
@@ -351,43 +392,96 @@ async function main() {
   createSizeFilter(sizes, "#size-options");
   createPriceRangeFilter(prices, "#price-options");
 
-  createProductShelfs(products);
+  const productPage = new ProductPage();
+  productPage.setProducts(products);
 
-  observable.registerListener(function (products: Product[]) {
-    createProductShelfs(products);
+  // OrderBy element
+  const orderBySelect = document.querySelector("#orderby__select");
+
+  // OrderBy event
+  orderBySelect.addEventListener("change", (event) => {
+    const value = (event.target as HTMLSelectElement)?.value;
+    let sortBy: SortBy = undefined;
+    let orderBy: OrderBy = undefined;
+
+    switch (value) {
+      case "newest":
+        sortBy = "date";
+        orderBy = "desc";
+        break;
+      case "price-asc":
+        sortBy = "price";
+        orderBy = "asc";
+        break;
+      case "price-desc":
+        sortBy = "price";
+        orderBy = "desc";
+        break;
+    }
+
+    if (!value || !sortBy || !orderBy) {
+      return;
+    }
+
+    const products = productPage.getProducts();
+    const sortedProducts = sortProductsBy(products, sortBy, orderBy);
+
+    productPage.setSorted(sortedProducts);
   });
 
-  /**
-   * OrderBy component
-   */
-  document
-    .querySelector("#orderby__select")
-    .addEventListener("change", function (evt) {
-      const value = (evt.target as HTMLSelectElement)?.value;
-      let sortBy: SortBy = undefined;
-      let orderBy: OrderBy = undefined;
+  // FilterBy color
+  const colorInputs = document.querySelectorAll<HTMLInputElement>(
+    "input[data-id='color']"
+  );
 
-      switch (value) {
-        case "newest":
-          sortBy = "date";
-          orderBy = "desc";
-          break;
-        case "price-asc":
-          sortBy = "price";
-          orderBy = "asc";
-          break;
-        case "price-desc":
-          sortBy = "price";
-          orderBy = "desc";
-          break;
-      }
+  // FilterBy color event
+  colorInputs.forEach((input) => {
+    input.addEventListener("change", function () {
+      const choosedColors = [...colorInputs]
+        .filter((element) => element.checked)
+        .map((element) => element.value);
 
-      if (!value || !sortBy || !orderBy) {
-        return;
-      }
-
-      observable.products = sortProductsBy(products, sortBy, orderBy);
+      productPage.setFilters({ color: choosedColors });
     });
+  });
+
+  // FilterBy size
+  const sizeButtons = document.querySelectorAll<HTMLButtonElement>(
+    "button[data-id='size']"
+  );
+
+  // FilterBy size event
+  sizeButtons.forEach((button) => {
+    button.addEventListener("click", function () {
+      const isActive = button.dataset.active == "true";
+      button.dataset.active = isActive ? "false" : "true";
+
+      button.dispatchEvent(new Event("change"));
+    });
+
+    button.addEventListener("change", function () {
+      const choosedSizes = [...sizeButtons]
+        .filter((element) => element.dataset.active == "true")
+        .map((element) => element.dataset.value);
+
+      productPage.setFilters({ size: choosedSizes });
+    });
+  });
+
+  // FilterBy price
+  const priceRadios = document.querySelectorAll<HTMLInputElement>(
+    "input[data-id='prince-range']"
+  );
+
+  // FilterBy color event
+  priceRadios.forEach((radio) => {
+    radio.addEventListener("change", function () {
+      const minValue = Number(radio.dataset.minValue) || 0;
+      const maxValue = Number(radio.dataset.maxValue) || Infinity;
+
+      productPage.setFilters({ price_range: [minValue, maxValue] });
+    });
+  });
 }
 
 document.addEventListener("DOMContentLoaded", main);
