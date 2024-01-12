@@ -18,7 +18,7 @@
           id="logo"
           height="30"
         />
-        <div class="minicart-icon">
+        <div id="minicart-icon" class="minicart-icon">
           <button
             type="button"
             id="minicart-button"
@@ -60,6 +60,27 @@
             <option value="price-desc">Maior preço</option>
           </select>
         </div>
+        <div class="mobile actions">
+          <button
+            title="Filtrar"
+            type="button"
+            id="filter-mobile-button"
+            class="filter-mobile-button"
+          >
+            Filtrar
+          </button>
+          <select
+            title="Ordernar por:"
+            name="orderby__select"
+            id="orderby__select-mobile"
+            class="orderby__select-mobile"
+          >
+            <option disabled selected>Ordernar por:</option>
+            <option value="newest">Mais recentes</option>
+            <option value="price-asc">Menor preço</option>
+            <option value="price-desc">Maior preço</option>
+          </select>
+        </div>
       </section>
 
       <section id="search-content" class="search-content">
@@ -82,6 +103,7 @@
         </div>
       </section>
     </main>
+
     <section id="minicart" class="minicart">
       <button type="button" id="close-minicart" class="close-minicart">
         &#10006;
@@ -96,6 +118,44 @@
         <button class="go-to-checkout">Ir para o Checkout</button>
       </div>
     </section>
+
+    <section id="filter-mobile" class="filter-mobile">
+      <div id="filters" class="filters">
+        <div id="colors" class="colors">
+          <h3 id="color-title-mobile" class="color-title title">Cores</h3>
+          <div id="color-options-mobile" class="color-options"></div>
+        </div>
+        <div id="sizes" class="sizes">
+          <h3 id="size-title-mobile" class="size-title title">Tamanho</h3>
+          <div id="size-options-mobile" class="size-options"></div>
+        </div>
+        <div id="prices" class="prices">
+          <h3 id="price-title-mobile" class="price-title title">
+            Faixa de Preço
+          </h3>
+          <div id="price-options-mobile" class="price-options"></div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button
+          title="Aplicar"
+          type="button"
+          id="apply-filter"
+          class="apply-filter"
+        >
+          Aplicar
+        </button>
+        <button
+          title="Limpar"
+          type="button"
+          id="clear-filter"
+          class="clear-filter"
+        >
+          Limpar
+        </button>
+      </div>
+    </section>
+
     <footer class="footer">
       <p class="copyright">M3: Implantação de E-commerce VTEX</p>
     </footer>

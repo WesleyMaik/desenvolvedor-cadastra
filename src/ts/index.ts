@@ -563,6 +563,10 @@ async function main() {
   createSizeFilter(sizes, "#size-options");
   createPriceRangeFilter(prices, "#price-options");
 
+  createColorFilter(colors, "#color-options-mobile");
+  createSizeFilter(sizes, "#size-options-mobile");
+  createPriceRangeFilter(prices, "#price-options-mobile");
+
   const productPage = new ProductPage();
   const cart = new Minicart();
 
@@ -571,36 +575,39 @@ async function main() {
 
   // OrderBy element
   const orderBySelect = document.querySelector("#orderby__select");
+  const orderBySelectMobile = document.querySelector("#orderby__select-mobile");
 
   // OrderBy event
-  orderBySelect.addEventListener("change", (event) => {
-    const value = (event.target as HTMLSelectElement)?.value;
-    let sortBy: SortBy = undefined;
-    let orderBy: OrderBy = undefined;
+  [orderBySelect, orderBySelectMobile].forEach((select) => {
+    select.addEventListener("change", (event) => {
+      const value = (event.target as HTMLSelectElement)?.value;
+      let sortBy: SortBy = undefined;
+      let orderBy: OrderBy = undefined;
 
-    switch (value) {
-      case "newest":
-        sortBy = "date";
-        orderBy = "desc";
-        break;
-      case "price-asc":
-        sortBy = "price";
-        orderBy = "asc";
-        break;
-      case "price-desc":
-        sortBy = "price";
-        orderBy = "desc";
-        break;
-    }
+      switch (value) {
+        case "newest":
+          sortBy = "date";
+          orderBy = "desc";
+          break;
+        case "price-asc":
+          sortBy = "price";
+          orderBy = "asc";
+          break;
+        case "price-desc":
+          sortBy = "price";
+          orderBy = "desc";
+          break;
+      }
 
-    if (!value || !sortBy || !orderBy) {
-      return;
-    }
+      if (!value || !sortBy || !orderBy) {
+        return;
+      }
 
-    const products = productPage.getProducts();
-    const sortedProducts = sortProductsBy(products, sortBy, orderBy);
+      const products = productPage.getProducts();
+      const sortedProducts = sortProductsBy(products, sortBy, orderBy);
 
-    productPage.setSorted(sortedProducts);
+      productPage.setSorted(sortedProducts);
+    });
   });
 
   const clearColorButton = document.querySelector<HTMLButtonElement>(
@@ -702,9 +709,8 @@ async function main() {
 
   // Minicart behaviours
   const minicart = document.querySelector("#minicart");
-  const minicartButton = document.querySelector<HTMLButtonElement>(
-    "button#minicart-button"
-  );
+  const minicartButton =
+    document.querySelector<HTMLDivElement>("#minicart-icon");
   const closeMinicartButton = document.querySelector<HTMLButtonElement>(
     "button#close-minicart"
   );
@@ -755,6 +761,35 @@ async function main() {
         cart.removeFromCart(itemId);
       });
     });
+  });
+
+  // Mobile Actions
+  const mobileFilter = document.querySelector<HTMLDivElement>("#filter-mobile");
+
+  const mobileFilterButton = document.querySelector<HTMLButtonElement>(
+    "button#filter-mobile-button"
+  );
+
+  const mobileApplyFilterButton =
+    document.querySelector<HTMLButtonElement>("#apply-filter");
+
+  const mobileClearFilterButton =
+    document.querySelector<HTMLButtonElement>("#clear-filter");
+
+  mobileFilterButton.addEventListener("click", function () {
+    mobileFilter.setAttribute("data-open", "true");
+  });
+
+  mobileApplyFilterButton.addEventListener("click", function () {
+    mobileFilter.removeAttribute("data-open");
+  });
+
+  mobileClearFilterButton.addEventListener("click", function () {
+    [clearColorButton, clearSizeButton, clearPricesButton].forEach((button) => {
+      button.dispatchEvent(new Event("click"));
+    });
+
+    mobileFilter.removeAttribute("data-open");
   });
 }
 
