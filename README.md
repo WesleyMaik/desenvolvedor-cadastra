@@ -1,4 +1,4 @@
-# Front-End Challenge - Agência M3
+# Front-End Challenge - Cadastra
 
 ## Requirements
 

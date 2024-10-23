@@ -1,7 +1,11 @@
 import { MinicartItem } from "./types/Minicart";
 import { Product } from "./types/Product";
 
-const serverUrl = "http://localhost:5000";
+const serverUrl =
+  process.env.NODE_ENV == "development"
+    ? "http://localhost:5000"
+    : "https://my-json-server.typicode.com/wesleymaik/desenvolvedor-cadastra";
+
 const get_product_url = `${serverUrl}/products`;
 
 async function getProducts() {
@@ -15,13 +19,9 @@ async function getProducts() {
       throw new Error("Something went wrong.");
     }
 
-    const result = (await response.json()) as Product[];
+    const result = ((await response.json()) || []) as Product[];
 
-    const uniqueProducts = result.reduce((acc, cur) => {
-      return acc.some((obj) => obj.id === cur.id) ? acc : [...acc, cur];
-    }, []) as Product[];
-
-    data = uniqueProducts;
+    data = result;
   } catch (err) {
     error = err;
   }
@@ -58,14 +58,13 @@ function getColorsByProducts(products: Product[]) {
  * @returns A list of sizes
  */
 function getSizesByProducts(products: Product[]) {
-  const sizes =
-    [
-      ...new Set(
-        products?.reduce((prev, cur) => {
-          return [...prev, ...cur.size];
-        }, [])
-      ),
-    ] || [];
+  const sizes = [
+    ...new Set(
+      products?.reduce((prev, cur) => {
+        return [...prev, ...cur.size];
+      }, [])
+    ),
+  ];
 
   const orderSizes = ["P", "M", "G", "GG", "U"];
   return sizes.sort((a, b) => {
@@ -83,16 +82,6 @@ function getPricesByProducts(products: Product[]) {
   return prices.sort((a, b) => {
     return a - b;
   });
-}
-
-/**
- *
- * @param products Products list
- * @returns A list of dates
- */
-function getDateByProducts(products: Product[]) {
-  const dates = getArrayDistinct(products, "date") || [];
-  return dates.sort() as string[];
 }
 
 type SortBy = "date" | "price" | "color" | "name";
@@ -140,7 +129,7 @@ function filterProductsBy(products: Product[], filterBy: FilterBy) {
 
   if (filterBy.color && filterBy.color.length) {
     filtered = filtered.filter((product) => {
-      const colorStatement = filterBy.color.includes(product.color);
+      const colorStatement = filterBy.color?.includes(product.color);
       return colorStatement;
     });
   }
@@ -148,7 +137,7 @@ function filterProductsBy(products: Product[], filterBy: FilterBy) {
   if (filterBy.size && filterBy.size.length) {
     filtered = filtered.filter((product) => {
       const sizeStatement = filterBy?.size.some((size) =>
-        product.size.includes(size)
+        (product.size || [])?.includes(size)
       );
       return sizeStatement;
     });
@@ -312,62 +301,6 @@ function formatCurrency(value: number) {
   return value?.toLocaleString("pt-br", { style: "currency", currency: "BRL" });
 }
 
-/**
- *
- * @param products Products list
- */
-function createProductShelfs(products: Product[]) {
-  const container = document.querySelector("#products");
-  container.innerHTML = "";
-
-  if (!products.length) {
-    const container = document.querySelector("#products-container");
-
-    const emptyElement = `<p id="shelf-empty">Não há produtos no momento.</p>`;
-
-    container.innerHTML += emptyElement;
-    return;
-  }
-
-  document.querySelector("#shelf-empty")?.remove();
-
-  products.forEach((product) => {
-    const { id, installment, image, name, price } = product;
-
-    const element = `
-      <a href="#" id="product-${id}" class="product">
-        <div id="image-container-${id}" class="image-container">
-          <img
-            class="product_image"
-            src=".${image}"
-            alt="${name || "Blusa"}"
-            width="190"
-            height="290"
-          />
-        </div>
-        <p id="product-name-${id}" class="product-name">${name}</p>
-        <p id="product-price-${id}" class="product-price">
-          ${formatCurrency(price)}
-        </p>
-        <p id="product-installment-${id}" class="product-installment">
-          Até ${installment[0]}x de ${formatCurrency(price / installment[0])}
-        </p>
-        <button 
-          type="button" 
-          id="add-to-cart-${id}" 
-          class="add-to-cart"
-          data-id="add-to-cart"
-          data-item-id="${id}"
-        >
-          Comprar
-        </button>
-      </a>
-    `.trim();
-
-    container.innerHTML += element;
-  });
-}
-
 function showErrorMessage() {
   const container = document.querySelector("#products-container");
 
@@ -440,7 +373,8 @@ class ProductPage {
   constructor(
     private products: Product[] = [],
     private filters: FilterBy = {},
-    private sorted: Product[] = []
+    private sorted: Product[] = [],
+    private itemsToShow: number = 6
   ) {}
 
   setProducts(data: Product[]) {
@@ -450,7 +384,7 @@ class ProductPage {
       this.setSorted(data);
     }
 
-    createProductShelfs(this.products);
+    this.createProductShelfs(this.products);
   }
 
   getProducts() {
@@ -462,10 +396,6 @@ class ProductPage {
     this.setProducts(data);
   }
 
-  getSorted() {
-    this.sorted;
-  }
-
   setFilters(data: FilterBy) {
     this.filters = { ...this.filters, ...data };
     const filtered = filterProductsBy(this.sorted, this.filters);
@@ -474,6 +404,89 @@ class ProductPage {
 
   getFilters() {
     return this.filters;
+  }
+
+  setItemsToShow(value: number) {
+    this.itemsToShow = value;
+    const products = this.products;
+    this.createProductShelfs(products);
+  }
+
+  showMoreItems() {
+    const itemsToShow = this.itemsToShow;
+
+    if (itemsToShow >= this.products.length) {
+      return;
+    }
+
+    this.setItemsToShow(itemsToShow + 6);
+  }
+
+  /**
+   *
+   * @param products Products list
+   */
+  createProductShelfs(products: Product[]) {
+    const container = document.querySelector("#products");
+    container.innerHTML = "";
+
+    if (!products.length) {
+      const container = document.querySelector("#products-container");
+
+      const emptyElement = `<p id="shelf-empty">Não há produtos no momento.</p>`;
+
+      container.innerHTML += emptyElement;
+      return;
+    }
+
+    document.querySelector("#shelf-empty")?.remove();
+
+    const itemsToShow = this.itemsToShow;
+
+    const showMoreButton =
+      document.querySelector<HTMLButtonElement>("#show-more");
+
+    if (itemsToShow >= products.length) {
+      showMoreButton.style.display = "none";
+    } else {
+      showMoreButton.style.display = "block";
+    }
+
+    products.slice(0, itemsToShow).forEach((product) => {
+      const { id, installment, image, name, price } = product;
+
+      const element = `
+        <a href="#" id="product-${id}" class="product">
+          <div id="image-container-${id}" class="image-container">
+            <img
+              class="product_image"
+              src=".${image}"
+              alt="${name || "Blusa"}"
+              width="190"
+              height="290"
+            />
+          </div>
+          <p id="product-name-${id}" class="product-name">${name}</p>
+          <p id="product-price-${id}" class="product-price">
+            ${formatCurrency(price)}
+          </p>
+          <p id="product-installment-${id}" class="product-installment">
+            Até ${installment[0]}x de ${formatCurrency(price / installment[0])}
+          </p>
+          <button 
+            type="button" 
+            id="add-to-cart-${id}" 
+            class="add-to-cart"
+            data-id="add-to-cart"
+            data-item-id="${id}"
+          >
+            Comprar
+          </button>
+        </a>
+      `.trim();
+
+      container.innerHTML += element;
+    });
   }
 }
 
@@ -573,14 +586,34 @@ async function main() {
   // Initializing Shelfs
   productPage.setProducts(products);
 
-  // OrderBy element
-  const orderBySelect = document.querySelector("#orderby__select");
-  const orderBySelectMobile = document.querySelector("#orderby__select-mobile");
-
   // OrderBy event
-  [orderBySelect, orderBySelectMobile].forEach((select) => {
-    select.addEventListener("change", (event) => {
-      const value = (event.target as HTMLSelectElement)?.value;
+  const select = document.querySelectorAll<HTMLDivElement>(".select");
+  const options =
+    document.querySelectorAll<HTMLButtonElement>(".options button");
+
+  select.forEach((select) => {
+    select.addEventListener("click", function () {
+      this.classList.toggle("opened");
+    });
+  });
+
+  options.forEach(function (option) {
+    const value = option.dataset.value;
+    const label = option.dataset.label;
+    option.addEventListener("click", function () {
+      select.forEach((select) => {
+        select.dataset.value = value;
+        select.querySelector<HTMLSpanElement>(".selected .text").innerText =
+          label;
+
+        select.dispatchEvent(new Event("change"));
+      });
+    });
+  });
+
+  select.forEach((select) => {
+    select.addEventListener("change", function () {
+      const value = this.dataset.value;
       let sortBy: SortBy = undefined;
       let orderBy: OrderBy = undefined;
 
@@ -607,6 +640,8 @@ async function main() {
       const sortedProducts = sortProductsBy(products, sortBy, orderBy);
 
       productPage.setSorted(sortedProducts);
+
+      addToCartEvent();
     });
   });
 
@@ -637,6 +672,8 @@ async function main() {
       clearColorButton.style.display = choosedColors.length ? "block" : "none";
 
       productPage.setFilters({ color: choosedColors });
+
+      addToCartEvent();
     });
   });
 
@@ -662,6 +699,8 @@ async function main() {
       clearSizeButton.style.display = choosedSizes.length ? "block" : "none";
 
       productPage.setFilters({ size: choosedSizes });
+
+      addToCartEvent();
     });
   });
 
@@ -681,6 +720,8 @@ async function main() {
       productPage.setFilters({
         price_range: radio.checked ? [minValue, maxValue] : [],
       });
+
+      addToCartEvent();
     });
   });
 
@@ -724,16 +765,15 @@ async function main() {
   });
 
   // Add to Minicart event
+  function addToCartEvent() {
+    const addToCartButtons = document.querySelectorAll<HTMLButtonElement>(
+      "button[data-id='add-to-cart']"
+    );
 
-  const addToCartButtons = document.querySelectorAll<HTMLButtonElement>(
-    "button[data-id='add-to-cart']"
-  );
-
-  addToCartButtons.forEach((addToCartButton) => {
-    addToCartButton.addEventListener("click", function (event) {
+    function addToCart(event: MouseEvent) {
       event.preventDefault();
 
-      const itemId = addToCartButton.dataset.itemId;
+      const itemId = this.dataset.itemId;
       const items = productPage.getProducts();
       const item = items.find((item) => item.id == itemId);
 
@@ -744,24 +784,37 @@ async function main() {
       cart.addToCart({ ...item, quantity: 1 });
       minicart.dispatchEvent(new Event("addToCart"));
       minicartButton.dispatchEvent(new Event("click"));
-    });
-  });
+    }
 
-  minicart.addEventListener("addToCart", function () {
+    addToCartButtons.forEach((addToCartButton) => {
+      addToCartButton.removeEventListener("click", addToCart);
+      addToCartButton.addEventListener("click", addToCart);
+    });
+  }
+
+  addToCartEvent();
+
+  function removeFromCart() {
     const removeFromCartButtons = document.querySelectorAll<HTMLButtonElement>(
       "button[data-id='remove-item']"
     );
 
     // Remove from cart event
     removeFromCartButtons.forEach((button) => {
-      // button.removeEventListener("click", function () {});
-      button.addEventListener("click", function () {
+      function removeItem() {
         const itemId = button.dataset.itemId;
-
         cart.removeFromCart(itemId);
-      });
+
+        button.removeEventListener("click", removeItem);
+
+        removeFromCart();
+      }
+
+      button.addEventListener("click", removeItem);
     });
-  });
+  }
+
+  minicart.addEventListener("addToCart", removeFromCart);
 
   // Mobile Actions
   const mobileFilter = document.querySelector<HTMLDivElement>("#filter-mobile");
@@ -790,6 +843,18 @@ async function main() {
     });
 
     mobileFilter.removeAttribute("data-open");
+  });
+
+  // Show more
+  const showMoreButton =
+    document.querySelector<HTMLButtonElement>("#show-more");
+
+  if (products.length > 0) {
+    showMoreButton.style.display = "block";
+  }
+
+  showMoreButton.addEventListener("click", function () {
+    productPage.showMoreItems();
   });
 }
 
