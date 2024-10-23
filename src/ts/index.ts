@@ -456,7 +456,7 @@ class ProductPage {
       const { id, installment, image, name, price } = product;
 
       const element = `
-        <a href="#" id="product-${id}" class="product">
+        <div id="product-${id}" class="product">
           <div id="image-container-${id}" class="image-container">
             <img
               class="product_image"
@@ -482,7 +482,7 @@ class ProductPage {
           >
             Comprar
           </button>
-        </a>
+        </div>
       `.trim();
 
       container.innerHTML += element;
@@ -855,6 +855,7 @@ async function main() {
 
   showMoreButton.addEventListener("click", function () {
     productPage.showMoreItems();
+    addToCartEvent();
   });
 }
 
