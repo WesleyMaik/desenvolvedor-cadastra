@@ -219,6 +219,7 @@ body {
         grid-row-gap: 42px;
 
         .product {
+          cursor: pointer;
           display: flex;
           flex-direction: column;
           align-items: center;
