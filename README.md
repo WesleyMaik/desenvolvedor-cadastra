@@ -8,7 +8,7 @@
 ## Clone
 
 ```bash
-git clone https://github.com/WesleyMaik/front-end-challenge-m3
+git clone https://github.com/WesleyMaik/desenvolvedor-cadastra
 ```
 
 ## Install
